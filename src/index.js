@@ -36,8 +36,16 @@ app.get('/talker/:id', async (req, res) => {
   // {
   //   "message": "Pessoa palestrante não encontrada"
   // }
-  // eslint-disable-next-line no-unused-expressions, max-len
-  (!talkerID) ? res.status(404).json({ message: 'Pessoa palestrante não encontrada' }) : res.status(200).json(talkerID);
+  
+  // (!talkerID) ? res.status(404).json({ message: 'Pessoa palestrante não encontrada' }) : res.status(200).json(talkerID);
+  if (!talkerID) {
+    return res.status(404).json(
+      { 
+        message: 'Pessoa palestrante não encontrada', 
+      },
+    );
+  }
+  return res.status(200).json(talkerID);
 });
   
 app.listen(PORT, () => {
