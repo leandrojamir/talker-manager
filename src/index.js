@@ -25,6 +25,21 @@ app.get('/talker', async (_req, res) => {
   res.status(200).json(result);
 });
 
+// 2 - Crie o endpoint GET /talker/:id
+// A requisição deve retornar o status 200 e uma pessoa palestrante com base no id da rota.
+app.get('/talker/:id', async (req, res) => {
+  const { id } = req.params;
+  const pathTalker = path.resolve(__dirname, 'talker.json');
+  const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
+  const talkerID = talker.find((element) => Number(element.id) === Number(id));
+  // Caso não seja encontrada uma pessoa palestrante com base no id da rota, a requisição deve retornar o status 404 com o seguinte corpo:
+  // {
+  //   "message": "Pessoa palestrante não encontrada"
+  // }
+  // eslint-disable-next-line no-unused-expressions, max-len
+  (!talkerID) ? res.status(404).json({ message: 'Pessoa palestrante não encontrada' }) : res.status(200).json(talkerID);
+});
+  
 app.listen(PORT, () => {
   console.log('Online');
 });
