@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
+const { validarToken, validarNome, validarIdade, validarTalk,
+  validarWatchedAt, validarRate } = require('./service/talker.service');
 
 const app = express();
 app.use(bodyParser.json());
@@ -135,6 +137,52 @@ app.post('/login', validarLogin1, validarLogin2, (req, res) => {
   if (email && password) {
     res.status(200).json({ token });
   }
+});
+
+// 5 - Crie o endpoint POST /talker
+// Os seguintes pontos serão avaliados:
+// O endpoint deve ser capaz de adicionar uma nova pessoa palestrante ao seu arquivo;
+// O corpo da requisição deverá ter o seguinte formato:
+// {
+//   "name": "Danielle Santos",
+//   "age": 56,
+//   "talk": {
+//     "watchedAt": "22/10/2019",
+//     "rate": 5
+//   }
+// }
+// Caso esteja tudo certo, retorne o status 201 e a pessoa cadastrada.
+// O endpoint deve retornar o status 201 e a pessoa palestrante que foi cadastrada, da seguinte forma:
+// {
+//   "id": 1,
+//   "name": "Danielle Santos",
+//   "age": 56,
+//   "talk": {
+//     "watchedAt": "22/10/2019",
+//     "rate": 5
+//   }
+// }
+
+app.post('/talker', validarToken, validarNome, validarIdade, validarTalk,
+  validarWatchedAt, validarRate, async (req, res) => {
+    const pathTalker = path.resolve(__dirname, 'talker.json');
+    const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
+    const id = talker.length + 1;
+    const { name, age, talk } = req.body;
+    const pessoaPalestrante = { name, age, id, talk };
+    const talkerModificado = [...talker, pessoaPalestrante];
+    console.log(talkerModificado);
+    console.log(JSON.stringify(talkerModificado));
+    // {
+    //   name: 'Danielle Santos',
+    //   age: 56,
+    //   id: 5,
+    //   talk: { watchedAt: '22/10/2019', rate: 5 }
+    // }
+    // {"name":"Danielle Santos","age":56,"id":7,"talk":{"watchedAt":"22/10/2019","rate":5}},{"name":"Danielle Santos","age":56,"id":8,"talk":{"watchedAt":"22/10/2019","rate":5}}]
+    // nota estava apanhando em converter data, quando uso .parse não posso escrever direto, lembrar sempre de novamente .string para converter em string
+    await fs.writeFile(pathTalker, JSON.stringify(talkerModificado));
+    res.status(201).json(pessoaPalestrante);
 });
 
 app.listen(PORT, () => {
