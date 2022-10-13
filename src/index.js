@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { validarToken, validarNome, validarIdade, validarTalk,
   validarWatchedAt, validarRate } = require('./service/talker.service');
 const { validarLogin1, validarLogin2 } = require('./service/login.service');
+const { validarDelete } = require('./service/token.service');
 
 const app = express();
 app.use(bodyParser.json());
@@ -176,36 +177,7 @@ app.put('/talker/:id', validarToken, validarNome, validarIdade, validarTalk,
 });
 
 // 7 - Crie o endpoint DELETE /talker/:id
-// Os seguintes pontos serão avaliados:
-// A requisição deve ter o token de autenticação nos headers, no campo authorization.
-// Caso o token não seja encontrado retorne um código de status 401, com o seguinte corpo:
-// {
-//   "message": "Token não encontrado"
-// }
-// Caso o token seja inválido retorne um código de status 401, com o seguinte corpo:
-// {
-//   "message": "Token inválido"
-// }
 // O endpoint deve deletar uma pessoa palestrante com base no id da rota. Devendo retornar o status 204, sem conteúdo na resposta.
-const validarDelete = (req, res, next) => {
-  const { authorization } = req.headers;
-  if (!authorization) {
-    return res.status(401).send(
-      {
-        message: 'Token não encontrado',
-      },
-    );
-  }
-  if (authorization.length < 16) {
-    return res.status(401).send(
-      {
-        message: 'Token inválido',
-      },
-    );
- }
-  next();
-};
-
 app.delete('/talker/:id', validarDelete, async (req, res) => {
   const { id } = req.params;
   const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
@@ -215,6 +187,34 @@ app.delete('/talker/:id', validarDelete, async (req, res) => {
   console.log(talkerID);
   await fs.writeFile(pathTalker, JSON.stringify(talkerID));
   return res.sendStatus(204);
+});
+
+// 8 - Crie o endpoint GET /talker/search?q=searchTerm
+// Os seguintes pontos serão avaliados:
+// O endpoint deve retornar um array de palestrantes que contenham em seu nome o termo pesquisado no queryParam da URL. Devendo retornar o status 200, com o seguinte corpo:
+// /search?q=Da
+// [
+//   {
+//     "id": 1,
+//     "name": "Danielle Santos",
+//     "age": 56,
+//     "talk": {
+//       "watchedAt": "22/10/2019",
+//       "rate": 5,
+//     },
+//   }
+// ]
+// Caso searchTerm não seja informado ou esteja vazio, o endpoint deverá retornar um array com todos as pessoas palestrantes cadastradas, assim como no endpoint GET /talker, com um status 200.
+// Caso nenhuma pessoa palestrante satisfaça a busca, o endpoint deve retornar o status 200 e um array vazio.
+// Dica é importante ter atenção se essa rota não entra em conflito com as outras, já que a ordem das rotas faz diferença na interpretação da aplicação
+
+app.get('/talker/search', validarDelete, async (req, res) => {
+  const searchTerm = req.query.q;
+  const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
+  // fazer filtro onde inclua o campo .name alguma informação digitada
+  const talkerQ = talker.filter((element) => element.name.includes(searchTerm));
+  console.log(talkerQ);
+  return res.status(200).json(talkerQ);
 });
 
 app.listen(PORT, () => {
