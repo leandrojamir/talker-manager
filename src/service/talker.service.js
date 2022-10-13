@@ -146,8 +146,32 @@ const validarWatchedAt = (req, res, next) => {
 // {
 //   "message": "O campo \"rate\" deve ser um inteiro de 1 à 5"
 // }
+
+// ● 6 - Crie o endpoint PUT /talker/:id › Será validado que não é possível editar uma pessoa palestrante com rate menor que 1
+// expect(received).toBe(expected) // Object.is equality
+// Expected: "O campo \"rate\" deve ser um inteiro de 1 à 5"
+// Received: "O campo \"rate\" é obrigatório"
+//   599 |           .then((responseUpdate) => {
+//   600 |             const { json } = responseUpdate;
+// > 601 |             expect(json.message).toBe(
+//       |                                  ^
+//   602 |               'O campo "rate" deve ser um inteiro de 1 à 5',
+//   603 |             );
+//   604 |           });
+//   at 06-editTalker.test.js:601:34
+//   at ../node_modules/frisby/src/frisby/spec.js:250:34
+// Test Suites: 1 failed, 1 total
+// Tests:       1 failed, 12 passed, 13 total
+// name: 'Zendaya',
+// age: 25,
+// talk: {
+//   watchedAt: '24/10/2020',
+//   rate: 0,
 const validarRate = (req, res, next) => {
   const { rate } = req.body.talk;
+  if (Number(rate) === 0) {
+    return res.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
+  }
   if (!rate) {
     return res.status(400).json(
       {
@@ -156,11 +180,7 @@ const validarRate = (req, res, next) => {
     );
   }
   if (rate < 1 || rate > 5) {
-    return res.status(400).json(
-      {
-        message: 'O campo "rate" deve ser um inteiro de 1 à 5',
-      },
-    ); 
+    return res.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' }); 
   }
   next();
 };

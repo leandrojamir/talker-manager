@@ -171,8 +171,8 @@ app.post('/talker', validarToken, validarNome, validarIdade, validarTalk,
     const { name, age, talk } = req.body;
     const pessoaPalestrante = { name, age, id, talk };
     const talkerModificado = [...talker, pessoaPalestrante];
-    console.log(talkerModificado);
-    console.log(JSON.stringify(talkerModificado));
+    // console.log(talkerModificado);
+    // console.log(JSON.stringify(talkerModificado));
     // {
     //   name: 'Danielle Santos',
     //   age: 56,
@@ -183,6 +183,51 @@ app.post('/talker', validarToken, validarNome, validarIdade, validarTalk,
     // nota estava apanhando em converter data, quando uso .parse não posso escrever direto, lembrar sempre de novamente .string para converter em string
     await fs.writeFile(pathTalker, JSON.stringify(talkerModificado));
     res.status(201).json(pessoaPalestrante);
+});
+
+// 6 - Crie o endpoint PUT /talker/:id
+// Os seguintes pontos serão avaliados:
+// O endpoint deve ser capaz de editar uma pessoa palestrante com base no id da rota, sem alterar o id registrado.
+// O corpo da requisição deverá ter o seguinte formato:
+// {
+//   "name": "Danielle Santos",
+//   "age": 56,
+//   "talk": {
+//     "watchedAt": "22/10/2019",
+//     "rate": 5
+//   }
+// }
+// Caso esteja tudo certo, retorne o status 200 e a pessoa editada.
+// O endpoint deve retornar o status 200 e a pessoa palestrante que foi editada, da seguinte forma:
+// {
+//   "id": 1,
+//   "name": "Danielle Santos",
+//   "age": 56,
+//   "talk": {
+//     "watchedAt": "22/10/2019",
+//     "rate": 4
+//   }
+// }
+app.put('/talker/:id', validarToken, validarNome, validarIdade, validarTalk,
+  validarWatchedAt, validarRate, async (req, res) => {
+    const { id } = req.params;
+    const pathTalker = path.resolve(__dirname, 'talker.json');
+    const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
+    // ● 6 - Crie o endpoint PUT /talker/:id › Será validado que é possível editar uma pessoa palestrante com sucesso
+    // expect(received).toEqual(expected) // deep equality
+    // Expected: ArrayContaining [ObjectContaining {"age": 25, "id": 5, "name": "Zendaya", "talk": {"rate": 4, "watchedAt": "24/10/2020"}}]
+    // Received: [{"age": 62, "id": 1, "name": "Henrique Albuquerque", "talk": {"rate": 5, "watchedAt": "23/10/2020"}}, {"age": 67, "id": 2, "name": "Heloísa Albuquerque", "talk": {"rate": 5, "watchedAt": "23/10/2020"}}, {"age": 33, "id": 3, "name": "Ricardo Xavier Filho", "talk": {"rate": 5, "watchedAt": "23/10/2020"}}, {"age": 24, "id": 4, "name": "Marcos Costa", "talk": {"rate": 5, "watchedAt": "23/10/2020"}}, {"age": 24, "id": 5, "name": "Zendaya Maree", "talk": {"rate": 5, "watchedAt": "25/09/2020"}}]
+    // const talkerUpdate = talker.find((element) => Number(element.id) === Number(id));
+    const talkerID = {
+      ...req.body,
+      id: Number(id),
+    };
+    const talkerEditado = talker.map((element) => {
+      const update = Number(element.id) === Number(id) ? talkerID : element;
+      return update;
+    });
+    await fs.writeFile(pathTalker, JSON.stringify(talkerEditado));
+    return res.status(200).json(talkerID);
 });
 
 app.listen(PORT, () => {
