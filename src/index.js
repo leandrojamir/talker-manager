@@ -6,9 +6,11 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 const { validarToken, validarNome, validarIdade, validarTalk,
   validarWatchedAt, validarRate } = require('./service/talker.service');
+const { validarLogin1, validarLogin2 } = require('./service/login.service');
 
 const app = express();
 app.use(bodyParser.json());
+const pathTalker = path.resolve(__dirname, 'talker.json');
 
 const HTTP_OK_STATUS = 200;
 const PORT = '3000';
@@ -21,7 +23,6 @@ app.get('/', (_request, response) => {
 // 1 - Crie o endpoint GET /talker
 // requisição deve retornar o status 200 e um array com todas as pessoas palestrantes cadastradas.
 app.get('/talker', async (_req, res) => {
-  const pathTalker = path.resolve(__dirname, 'talker.json');
   const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
   // Caso não exista nenhuma pessoa palestrante cadastrada a requisição deve retornar o status 200 e um array vazio.
   const result = talker.length === 0 ? [] : talker;
@@ -32,7 +33,6 @@ app.get('/talker', async (_req, res) => {
 // A requisição deve retornar o status 200 e uma pessoa palestrante com base no id da rota.
 app.get('/talker/:id', async (req, res) => {
   const { id } = req.params;
-  const pathTalker = path.resolve(__dirname, 'talker.json');
   const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
   const talkerID = talker.find((element) => Number(element.id) === Number(id));
   // Caso não seja encontrada uma pessoa palestrante com base no id da rota, a requisição deve retornar o status 404 com o seguinte corpo:
@@ -59,60 +59,7 @@ app.get('/talker/:id', async (req, res) => {
 // o campo password é obrigatório;
 // o campo password deve ter pelo menos 6 caracteres.
 // Os seguintes pontos serão avaliados:
-// Caso o campo email não seja passado ou esteja vazio, retorne um código de status 400 com o seguinte corpo:
-// {
-//   "message": "O campo \"email\" é obrigatório"
-// }
-// Caso o email passado não seja válido, retorne um código de status 400 com o seguinte corpo:
-// {
-//   "message": "O \"email\" deve ter o formato \"email@email.com\""
-// }
-// Caso o campo password não seja passado ou esteja vazio retorne um código de status 400 com o seguinte corpo:
-// {
-//   "message": "O campo \"password\" é obrigatório"
-// }
-// Caso a senha não tenha pelo menos 6 caracteres retorne um código de status 400 com o seguinte corpo:
-// {
-//   "message": "O \"password\" deve ter pelo menos 6 caracteres"
-// }
-const validarLogin1 = (req, res, next) => {
-  const { email } = req.body;
-  const regexSimples = /\S+@\S+\.\S+/;
-  if (!email) {
-    return res.status(400).json(
-      {
-        message: 'O campo "email" é obrigatório',
-      },
-    );
-  }
-  if (!regexSimples.test(email)) {
-    return res.status(400).json(
-      {
-        message: 'O "email" deve ter o formato "email@email.com"',
-      },
-    );
-  }
-  next();
-};
-// quebrando em 2 // eslint-disable-next-line max-lines-per-function
-const validarLogin2 = (req, res, next) => {
-  const { password } = req.body;
-  if (!password) {
-    return res.status(400).json(
-      {
-        message: 'O campo "password" é obrigatório',
-      },
-    );
-  }
-  if (password.length <= 6) {
-    return res.status(400).json(
-      {
-        message: 'O "password" deve ter pelo menos 6 caracteres',
-      },
-    );
-  } 
-  next();
-};
+// mudando validacao para login.service.js
 
 // 3 - Crie o endpoint POST /login
 // O endpoint deverá receber no corpo da requisição os campos email e password e retornar um token aleatório de 16 caracteres. Este token será utilizado pelas requisições dos próximos requisitos do projeto.
@@ -165,7 +112,6 @@ app.post('/login', validarLogin1, validarLogin2, (req, res) => {
 
 app.post('/talker', validarToken, validarNome, validarIdade, validarTalk,
   validarWatchedAt, validarRate, async (req, res) => {
-    const pathTalker = path.resolve(__dirname, 'talker.json');
     const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
     const id = talker.length + 1;
     const { name, age, talk } = req.body;
@@ -211,7 +157,6 @@ app.post('/talker', validarToken, validarNome, validarIdade, validarTalk,
 app.put('/talker/:id', validarToken, validarNome, validarIdade, validarTalk,
   validarWatchedAt, validarRate, async (req, res) => {
     const { id } = req.params;
-    const pathTalker = path.resolve(__dirname, 'talker.json');
     const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
     // ● 6 - Crie o endpoint PUT /talker/:id › Será validado que é possível editar uma pessoa palestrante com sucesso
     // expect(received).toEqual(expected) // deep equality
@@ -228,6 +173,48 @@ app.put('/talker/:id', validarToken, validarNome, validarIdade, validarTalk,
     });
     await fs.writeFile(pathTalker, JSON.stringify(talkerEditado));
     return res.status(200).json(talkerID);
+});
+
+// 7 - Crie o endpoint DELETE /talker/:id
+// Os seguintes pontos serão avaliados:
+// A requisição deve ter o token de autenticação nos headers, no campo authorization.
+// Caso o token não seja encontrado retorne um código de status 401, com o seguinte corpo:
+// {
+//   "message": "Token não encontrado"
+// }
+// Caso o token seja inválido retorne um código de status 401, com o seguinte corpo:
+// {
+//   "message": "Token inválido"
+// }
+// O endpoint deve deletar uma pessoa palestrante com base no id da rota. Devendo retornar o status 204, sem conteúdo na resposta.
+const validarDelete = (req, res, next) => {
+  const { authorization } = req.headers;
+  if (!authorization) {
+    return res.status(401).send(
+      {
+        message: 'Token não encontrado',
+      },
+    );
+  }
+  if (authorization.length < 16) {
+    return res.status(401).send(
+      {
+        message: 'Token inválido',
+      },
+    );
+ }
+  next();
+};
+
+app.delete('/talker/:id', validarDelete, async (req, res) => {
+  const { id } = req.params;
+  const talker = JSON.parse(await fs.readFile(pathTalker, 'utf8'));
+  console.log(talker);
+  // refaz filtro e pega todos novamente exceto o ID escolhido para delete
+  const talkerID = talker.filter((element) => Number(element.id) !== Number(id));
+  console.log(talkerID);
+  await fs.writeFile(pathTalker, JSON.stringify(talkerID));
+  return res.sendStatus(204);
 });
 
 app.listen(PORT, () => {
